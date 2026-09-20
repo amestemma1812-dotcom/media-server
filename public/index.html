@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+  :root{
+    --cream: #F4F1EA;
+    --cream-panel: #EAE6DC; 
+    --line: #DDD7C8;
+    --ink: #2B2A27;
+    --ink-dim: #7A766B;
+    --accent: #D97757;
+    --accent-ink: #FBF4EF;
+    --radius: 4px;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  header.top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:28px 44px 22px;
+    border-bottom:1px solid var(--line);
+    flex-wrap:wrap; gap:16px;
+  }
+  header.top h1{
+    font-family:var(--serif); font-weight:400; font-size:24px; margin:0;
+  }
+  header.top .tabs{display:flex; gap:4px;}
+  header.top .tabs button{
+    all:unset; cursor:pointer;
+    padding:8px 14px; font-size:13px; color:var(--ink-dim);
+    border-radius:var(--radius);
+  }
+  header.top .tabs button:hover{color:var(--ink);}
+  header.top .tabs button.active{background:var(--ink); color:var(--cream);}
+
+  .btn{
+    all:unset; cursor:pointer;
+    padding:10px 18px; font-size:13px;
+    background:var(--accent); color:var(--accent-ink);
+    border-radius:var(--radius);
+    transition:opacity .15s;
+  }
+  .btn:hover{opacity:.88;}
+  input[type=file]{display:none;}
+
+  main{padding:36px 44px 60px; max-width:1400px; margin:0 auto;}
+
+  .dropzone{
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+    padding:22px 26px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:18px; flex-wrap:wrap;
+    margin-bottom:32px;
+    background:var(--cream-panel);
+    font-size:13px; color:var(--ink-dim);
+    transition:border-color .15s;
+  }
+  .dropzone.drag{border-color:var(--accent);}
+  .dropzone b{color:var(--ink); font-weight:500;}
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap:26px 20px;
+  }
+  .card{cursor:pointer;}
+  .thumb{
+    aspect-ratio: 2/3;
+    border-radius:var(--radius);
+    background:var(--cream-panel);
+    border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-dim);
+    font-size:24px;
+    margin-bottom:10px;
+    position:relative; overflow:hidden;
+    transition:border-color .15s;
+  }
+  .card.kind-music .thumb{aspect-ratio:1/1;}
+  .card:hover .thumb{border-color:var(--accent);}
+  .thumb .dur{
+    position:absolute; right:6px; bottom:6px;
+    font-size:10.5px; background:rgba(43,42,39,.75); color:#fff;
+    padding:2px 6px; border-radius:2px;
+    font-variant-numeric:tabular-nums;
+  }
+  .title{font-size:13px; line-height:1.35;}
+  .meta{font-size:11px; color:var(--ink-dim); margin-top:2px;}
+
+  .empty{
+    text-align:center; padding:70px 0; color:var(--ink-dim); font-size:13.5px;
+    border:1px dashed var(--line); border-radius:var(--radius);
+  }
+
+  .veil{
+    position:fixed; inset:0; background:rgba(43,42,39,.7);
+    display:flex; align-items:center; justify-content:center; padding:24px; z-index:50;
+  }
+  .veil[hidden]{display:none;}
+  .player{
+    width:100%; max-width:880px;
+    background:var(--cream);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .player header{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 18px; border-bottom:1px solid var(--line);
+  }
+  .player header h2{font-family:var(--serif); font-weight:400; font-size:16px; margin:0;}
+  .player header button{all:unset; cursor:pointer; font-size:20px; color:var(--ink-dim);}
+  .player header button:hover{color:var(--ink);}
+  .player .stage{background:#000; display:flex; align-items:center; justify-content:center;}
+  .player video{width:100%; max-height:70vh; display:block;}
+  .player .audio-stage{padding:50px 30px; display:flex; flex-direction:column; align-items:center; gap:18px; background:var(--cream-panel);}
+  .player .disc{width:150px; height:150px; border-radius:50%; background:radial-gradient(circle at 35% 30%, var(--accent), #a8503a 70%);}
+  .player audio{width:100%;}
+
+  ::-webkit-scrollbar{width:9px; height:9px;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Galería</h1>
+  <div class="tabs" id="tabs">
+    <button data-filter="all" class="active">Todo</button>
+    <button data-filter="movie">Películas</button>
+    <button data-filter="video">Videos</button>
+    <button data-filter="music">Música</button>
+  </div>
+  <button class="btn" id="pickBtn">Subir</button>
+  <input type="file" id="fileInput" multiple accept="video/*,audio/*">
+</header>
+
+<main>
+  <div class="dropzone" id="dropzone">
+    <span><b>Arrastra archivos aquí</b> — video o audio, para verlos o escucharlos al instante.</span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="emptyMsg" hidden>Aún no hay nada en tu galería. Sube tu primer archivo.</div>
+</main>
+
+<div class="veil" id="veil" hidden>
+  <div class="player">
+    <header>
+      <h2 id="playerTitle">Título</h2>
+      <button id="closePlayer">×</button>
+    </header>
+    <div class="stage" id="stage"></div>
+  </div>
+</div>
+<script>
+const els = {
+  pickBtn: document.getElementById('pickBtn'),
+  fileInput: document.getElementById('fileInput'),
+  dropzone: document.getElementById('dropzone'),
+  grid: document.getElementById('grid'),
+  emptyMsg: document.getElementById('emptyMsg'),
+  tabs: document.getElementById('tabs'),
+  veil: document.getElementById('veil'),
+  stage: document.getElementById('stage'),
+  playerTitle: document.getElementById('playerTitle'),
+  closePlayer: document.getElementById('closePlayer'),
+};
+
+let items = [];
+let activeFilter = 'all';
+
+function classify(mime, name){
+  if(mime.startsWith('audio/')) return 'music';
+  return /movie|film|pelicula|película/i.test(name) ? 'movie' : 'video';
+}
+function fmtBytes(b){
+  const u=['B','KB','MB','GB']; let i=0,n=b;
+  while(n>=1024 && i<u.length-1){n/=1024;i++;}
+  return `${n.toFixed(n<10&&i>0?1:0)} ${u[i]}`;
+}
+function fmtDur(sec){
+  sec = Math.round(sec);
+  const m = Math.floor(sec/60), s = sec%60;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function iconFor(kind){ return kind==='music' ? '♫' : (kind==='movie' ? '▤' : '▶'); }
+
+function addFiles(fileList){
+  [...fileList].forEach(file => {
+    const url = URL.createObjectURL(file);
+    const kind = classify(file.type, file.name);
+    const item = { name:file.name, size:file.size, kind, url, duration:null };
+    items.push(item);
+
+    const probe = document.createElement(kind==='music' ? 'audio' : 'video');
+    probe.preload = 'metadata';
+    probe.src = url;
+    probe.onloadedmetadata = () => { item.duration = probe.duration; renderGrid(); };
+  });
+  renderGrid();
+}
+
+function renderGrid(){
+  const filtered = items.filter(it => activeFilter==='all' || it.kind===activeFilter);
+  els.grid.innerHTML = '';
+  els.emptyMsg.hidden = filtered.length !== 0;
+
+  filtered.forEach(it => {
+    const card = document.createElement('div');
+    card.className = `card kind-${it.kind}`;
+    card.innerHTML = `
+      <div class="thumb">${iconFor(it.kind)}${it.duration ? `<span class="dur">${fmtDur(it.duration)}</span>` : ''}</div>
+      <div class="title">${it.name}</div>
+      <div class="meta">${fmtBytes(it.size)}</div>
+    `;
+    card.addEventListener('click', () => openPlayer(it));
+    els.grid.appendChild(card);
+  });
+}
+
+function openPlayer(item){
+  els.playerTitle.textContent = item.name;
+  if(item.kind === 'music'){
+    els.stage.innerHTML = `
+      <div class="audio-stage">
+        <div class="disc"></div>
+        <audio controls autoplay src="${item.url}"></audio>
+      </div>`;
+  }else{
+    els.stage.innerHTML = `<video controls autoplay src="${item.url}"></video>`;
+  }
+  els.veil.hidden = false;
+}
+function closePlayer(){ els.veil.hidden = true; els.stage.innerHTML = ''; }
+
+els.pickBtn.addEventListener('click', () => els.fileInput.click());
+els.fileInput.addEventListener('change', e => { if(e.target.files.length) addFiles(e.target.files); e.target.value=''; });
+['dragover','dragenter'].forEach(ev => els.dropzone.addEventListener(ev, e => { e.preventDefault(); els.dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => els.dropzone.addEventListener(ev, e => { e.preventDefault(); els.dropzone.classList.remove('drag'); }));
+els.dropzone.addEventListener('drop', e => { if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+els.tabs.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-filter]');
+  if(!btn) return;
+  [...els.tabs.querySelectorAll('button')].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = btn.dataset.filter;
+  renderGrid();
+});
+els.closePlayer.addEventListener('click', closePlayer);
+els.veil.addEventListener('click', e => { if(e.target === els.veil) closePlayer(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closePlayer(); });
+
+renderGrid();
+</script>
+</body>
+</html>
