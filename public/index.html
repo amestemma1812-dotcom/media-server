@@ -1,16 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bóveda — tu biblioteca multimedia</title>
+<style>
   :root{
-    --cream: #F4F1EA;
-    --cream-panel: #EAE6DC; 
-    --line: #DDD7C8;
-    --ink: #2B2A27;
-    --ink-dim: #7A766B;
-    --accent: #D97757;
-    --accent-ink: #FBF4EF;
-    --radius: 4px;
+    --bg: #0e0f10;
+    --bg-panel: #161719;
+    --line: #262729;
+    --text: #e9e7e2;
+    --text-dim: #8d8b86;
+    --accent: #d4b483;
+    --accent-dim: #8a744f;
+    --danger: #c0554a;
+    --radius: 3px;
     --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
     --sans: "Inter", "Helvetica Neue", Arial, sans-serif;
   }
@@ -18,160 +22,142 @@
   html,body{height:100%;}
   body{
     margin:0;
-    background:var(--cream);
-    color:var(--ink);
+    background:var(--bg);
+    color:var(--text);
     font-family:var(--sans);
     -webkit-font-smoothing:antialiased;
   }
-
-  header.top{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:28px 44px 22px;
-    border-bottom:1px solid var(--line);
-    flex-wrap:wrap; gap:16px;
-  }
-  header.top h1{
-    font-family:var(--serif); font-weight:400; font-size:24px; margin:0;
-  }
-  header.top .tabs{display:flex; gap:4px;}
-  header.top .tabs button{
-    all:unset; cursor:pointer;
-    padding:8px 14px; font-size:13px; color:var(--ink-dim);
-    border-radius:var(--radius);
-  }
-  header.top .tabs button:hover{color:var(--ink);}
-  header.top .tabs button.active{background:var(--ink); color:var(--cream);}
-
-  .btn{
-    all:unset; cursor:pointer;
-    padding:10px 18px; font-size:13px;
-    background:var(--accent); color:var(--accent-ink);
-    border-radius:var(--radius);
-    transition:opacity .15s;
-  }
-  .btn:hover{opacity:.88;}
-  input[type=file]{display:none;}
-
-  main{padding:36px 44px 60px; max-width:1400px; margin:0 auto;}
-
-  .dropzone{
-    border:1px dashed var(--line);
-    border-radius:var(--radius);
-    padding:22px 26px;
-    display:flex; align-items:center; justify-content:space-between;
-    gap:18px; flex-wrap:wrap;
-    margin-bottom:32px;
-    background:var(--cream-panel);
-    font-size:13px; color:var(--ink-dim);
-    transition:border-color .15s;
-  }
-  .dropzone.drag{border-color:var(--accent);}
-  .dropzone b{color:var(--ink); font-weight:500;}
-
-  .grid{
+  .shell{
     display:grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap:26px 20px;
+    grid-template-columns: 220px 1fr;
+    min-height:100vh;
   }
-  .card{cursor:pointer;}
-  .thumb{
-    aspect-ratio: 2/3;
-    border-radius:var(--radius);
-    background:var(--cream-panel);
-    border:1px solid var(--line);
-    display:flex; align-items:center; justify-content:center;
-    color:var(--ink-dim);
-    font-size:24px;
-    margin-bottom:10px;
-    position:relative; overflow:hidden;
-    transition:border-color .15s;
+  @media (max-width: 760px){
+    .shell{grid-template-columns: 1fr;}
+    nav.side{position:sticky; top:0; z-index:5; border-right:none; border-bottom:1px solid var(--line);}
+    nav.side .rail{display:flex; flex-direction:row; overflow-x:auto; padding:10px 14px; gap:6px;}
+    nav.side .brand{padding:14px 14px 4px;}
+    nav.side .rail button{white-space:nowrap;}
   }
-  .card.kind-music .thumb{aspect-ratio:1/1;}
-  .card:hover .thumb{border-color:var(--accent);}
-  .thumb .dur{
-    position:absolute; right:6px; bottom:6px;
-    font-size:10.5px; background:rgba(43,42,39,.75); color:#fff;
-    padding:2px 6px; border-radius:2px;
-    font-variant-numeric:tabular-nums;
-  }
-  .title{font-size:13px; line-height:1.35;}
-  .meta{font-size:11px; color:var(--ink-dim); margin-top:2px;}
-
-  .empty{
-    text-align:center; padding:70px 0; color:var(--ink-dim); font-size:13.5px;
-    border:1px dashed var(--line); border-radius:var(--radius);
-  }
-
-  .veil{
-    position:fixed; inset:0; background:rgba(43,42,39,.7);
-    display:flex; align-items:center; justify-content:center; padding:24px; z-index:50;
-  }
+  nav.side{border-right:1px solid var(--line); padding:26px 0 20px; display:flex; flex-direction:column;}
+  .brand{padding:0 22px 22px; font-family:var(--serif); font-size:20px; letter-spacing:.01em; border-bottom:1px solid var(--line); margin-bottom:14px;}
+  .brand span{color:var(--accent);}
+  .rail{display:flex; flex-direction:column; gap:2px; padding:0 10px;}
+  .rail button{all:unset; cursor:pointer; padding:9px 12px; border-radius:var(--radius); font-size:13.5px; color:var(--text-dim);}
+  .rail button:hover{color:var(--text); background:var(--bg-panel);}
+  .rail button.active{color:var(--text); background:var(--bg-panel); box-shadow: inset 2px 0 0 var(--accent);}
+  .rail .count{float:right; color:var(--text-dim); font-variant-numeric:tabular-nums; font-size:12px;}
+  .storage-note{margin-top:auto; padding:14px 22px 0; font-size:11.5px; line-height:1.5; color:var(--text-dim); border-top:1px solid var(--line);}
+  main{padding:34px 40px 60px;}
+  @media (max-width: 760px){ main{padding:22px 18px 50px;} }
+  header.top{display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:26px; flex-wrap:wrap;}
+  header.top h1{font-family:var(--serif); font-weight:400; font-size:26px; margin:0;}
+  header.top p{margin:6px 0 0; color:var(--text-dim); font-size:13.5px;}
+  .btn{all:unset; cursor:pointer; padding:10px 18px; border:1px solid var(--accent-dim); color:var(--accent); border-radius:var(--radius); font-size:13px; letter-spacing:.02em; transition:background .15s, color .15s;}
+  .btn:hover{background:var(--accent); color:#161311;}
+  .btn:disabled{opacity:.4; cursor:default; background:none; color:var(--accent);}
+  .dropzone{border:1px dashed var(--line); border-radius:var(--radius); padding:26px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:34px; background:var(--bg-panel); transition:border-color .15s, background .15s;}
+  .dropzone.drag{border-color:var(--accent); background:#1a1712;}
+  .dropzone .txt{font-size:13.5px; color:var(--text-dim);}
+  .dropzone .txt b{color:var(--text); font-weight:500;}
+  input[type=file]{display:none;}
+  .queue{margin-bottom:30px; display:flex; flex-direction:column; gap:8px;}
+  .qrow{display:grid; grid-template-columns: 1fr 120px 70px; align-items:center; gap:14px; font-size:12.5px; padding:8px 0; border-bottom:1px solid var(--line);}
+  .qrow .name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .qrow .bar{height:2px; background:var(--line); position:relative; border-radius:2px; overflow:hidden;}
+  .qrow .bar i{position:absolute; inset:0 auto 0 0; background:var(--accent); width:0%; transition:width .2s;}
+  .qrow .status{color:var(--text-dim); text-align:right;}
+  .qrow.done .status{color:#7fae86;}
+  .qrow.error .status{color:var(--danger);}
+  .grid{display:grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap:22px 18px;}
+  .card{cursor:pointer; display:flex; flex-direction:column;}
+  .thumb{aspect-ratio: 2/3; border-radius:var(--radius); background:var(--bg-panel); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--text-dim); font-size:26px; margin-bottom:9px; position:relative; overflow:hidden;}
+  .card.kind-music .thumb{aspect-ratio: 1/1;}
+  .thumb .dur{position:absolute; right:6px; bottom:6px; font-size:10.5px; background:rgba(0,0,0,.55); padding:2px 5px; border-radius:2px; color:#eee; font-variant-numeric:tabular-nums;}
+  .card:hover .thumb{border-color:var(--accent-dim);}
+  .title{font-size:13px; line-height:1.35; color:var(--text);}
+  .meta{font-size:11px; color:var(--text-dim); margin-top:2px;}
+  .empty{color:var(--text-dim); font-size:13.5px; padding:60px 0; text-align:center; border:1px dashed var(--line); border-radius:var(--radius);}
+  .veil{position:fixed; inset:0; background:rgba(6,6,7,.86); display:flex; align-items:center; justify-content:center; padding:24px; z-index:50;}
   .veil[hidden]{display:none;}
-  .player{
-    width:100%; max-width:880px;
-    background:var(--cream);
-    border-radius:var(--radius);
-    overflow:hidden;
-  }
-  .player header{
-    display:flex; justify-content:space-between; align-items:center;
-    padding:14px 18px; border-bottom:1px solid var(--line);
-  }
+  .player{width:100%; max-width:900px; background:var(--bg-panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden;}
+  .player header{display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--line);}
   .player header h2{font-family:var(--serif); font-weight:400; font-size:16px; margin:0;}
-  .player header button{all:unset; cursor:pointer; font-size:20px; color:var(--ink-dim);}
-  .player header button:hover{color:var(--ink);}
+  .player header button{all:unset; cursor:pointer; color:var(--text-dim); font-size:20px; line-height:1; padding:4px;}
+  .player header button:hover{color:var(--text);}
   .player .stage{background:#000; display:flex; align-items:center; justify-content:center;}
   .player video{width:100%; max-height:70vh; display:block;}
-  .player .audio-stage{padding:50px 30px; display:flex; flex-direction:column; align-items:center; gap:18px; background:var(--cream-panel);}
-  .player .disc{width:150px; height:150px; border-radius:50%; background:radial-gradient(circle at 35% 30%, var(--accent), #a8503a 70%);}
+  .player .audio-stage{padding:50px 30px; display:flex; flex-direction:column; align-items:center; gap:18px;}
+  .player .audio-stage .disc{width:150px; height:150px; border-radius:50%; background: radial-gradient(circle at 35% 30%, #2a2521, #0d0c0b 70%); border:1px solid var(--line);}
   .player audio{width:100%;}
-
+  .player .info{padding:14px 18px; font-size:12.5px; color:var(--text-dim);}
   ::-webkit-scrollbar{width:9px; height:9px;}
   ::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
 </style>
 </head>
 <body>
-<header class="top">
-  <h1>Galería</h1>
-  <div class="tabs" id="tabs">
-    <button data-filter="all" class="active">Todo</button>
-    <button data-filter="movie">Películas</button>
-    <button data-filter="video">Videos</button>
-    <button data-filter="music">Música</button>
-  </div>
-  <button class="btn" id="pickBtn">Subir</button>
-  <input type="file" id="fileInput" multiple accept="video/*,audio/*">
-</header>
 
-<main>
-  <div class="dropzone" id="dropzone">
-    <span><b>Arrastra archivos aquí</b> — video o audio, para verlos o escucharlos al instante.</span>
-  </div>
+<div class="shell">
+  <nav class="side">
+    <div class="brand">Bóveda<span>.</span></div>
+    <div class="rail" id="railTabs">
+      <button data-filter="all" class="active">Todo <span class="count" id="cntAll">0</span></button>
+      <button data-filter="movie">Películas <span class="count" id="cntMovie">0</span></button>
+      <button data-filter="video">Videos <span class="count" id="cntVideo">0</span></button>
+      <button data-filter="music">Música <span class="count" id="cntMusic">0</span></button>
+    </div>
+    <div class="storage-note" id="storageNote">Conectando con el servidor…</div>
+  </nav>
 
-  <div class="grid" id="grid"></div>
-  <div class="empty" id="emptyMsg" hidden>Aún no hay nada en tu galería. Sube tu primer archivo.</div>
-</main>
+  <main>
+    <header class="top">
+      <div>
+        <h1>Tu biblioteca</h1>
+        <p id="subhead">Sube y reproduce tus videos, películas y música.</p>
+      </div>
+      <button class="btn" id="pickBtn">Subir archivos</button>
+      <input type="file" id="fileInput" multiple accept="video/*,audio/*">
+    </header>
+
+    <div class="dropzone" id="dropzone">
+      <div class="txt"><b>Arrastra archivos aquí</b> — o usa el botón de arriba. Se admite video y audio.</div>
+      <div class="txt" id="serverStatus">●&nbsp; verificando servidor…</div>
+    </div>
+
+    <div class="queue" id="queue"></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="emptyMsg" hidden>Aún no hay nada aquí. Sube tu primer archivo.</div>
+  </main>
+</div>
 
 <div class="veil" id="veil" hidden>
   <div class="player">
     <header>
       <h2 id="playerTitle">Título</h2>
-      <button id="closePlayer">×</button>
+      <button id="closePlayer" aria-label="Cerrar">×</button>
     </header>
     <div class="stage" id="stage"></div>
+    <div class="info" id="playerInfo"></div>
   </div>
 </div>
+
 <script>
+const API_BASE = window.location.origin;
+
 const els = {
   pickBtn: document.getElementById('pickBtn'),
   fileInput: document.getElementById('fileInput'),
   dropzone: document.getElementById('dropzone'),
+  queue: document.getElementById('queue'),
   grid: document.getElementById('grid'),
   emptyMsg: document.getElementById('emptyMsg'),
-  tabs: document.getElementById('tabs'),
+  railTabs: document.getElementById('railTabs'),
+  serverStatus: document.getElementById('serverStatus'),
+  storageNote: document.getElementById('storageNote'),
   veil: document.getElementById('veil'),
   stage: document.getElementById('stage'),
   playerTitle: document.getElementById('playerTitle'),
+  playerInfo: document.getElementById('playerInfo'),
   closePlayer: document.getElementById('closePlayer'),
 };
 
@@ -179,87 +165,180 @@ let items = [];
 let activeFilter = 'all';
 
 function classify(mime, name){
-  if(mime.startsWith('audio/')) return 'music';
-  return /movie|film|pelicula|película/i.test(name) ? 'movie' : 'video';
+  if(mime?.startsWith('audio/')) return 'music';
+  if(mime?.startsWith('video/')){
+    return /movie|film|pelicula|película/i.test(name) ? 'movie' : 'video';
+  }
+  return 'video';
 }
 function fmtBytes(b){
-  const u=['B','KB','MB','GB']; let i=0,n=b;
-  while(n>=1024 && i<u.length-1){n/=1024;i++;}
-  return `${n.toFixed(n<10&&i>0?1:0)} ${u[i]}`;
+  if(b == null) return '';
+  const u = ['B','KB','MB','GB'];
+  let i = 0; let n = b;
+  while(n >= 1024 && i < u.length-1){ n/=1024; i++; }
+  return `${n.toFixed(n < 10 && i>0 ? 1 : 0)} ${u[i]}`;
 }
 function fmtDur(sec){
+  if(!sec && sec !== 0) return '';
   sec = Math.round(sec);
-  const m = Math.floor(sec/60), s = sec%60;
-  return `${m}:${String(s).padStart(2,'0')}`;
+  const h = Math.floor(sec/3600), m = Math.floor((sec%3600)/60), s = sec%60;
+  return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
 }
-function iconFor(kind){ return kind==='music' ? '♫' : (kind==='movie' ? '▤' : '▶'); }
+function iconFor(kind){
+  return kind === 'music' ? '♫' : (kind === 'movie' ? '▤' : '▶');
+}
 
-function addFiles(fileList){
-  [...fileList].forEach(file => {
-    const url = URL.createObjectURL(file);
-    const kind = classify(file.type, file.name);
-    const item = { name:file.name, size:file.size, kind, url, duration:null };
-    items.push(item);
+async function checkServer(){
+  try{
+    const r = await fetch(`${API_BASE}/api/media`, { method:'GET' });
+    if(!r.ok) throw new Error('bad status');
+    els.serverStatus.textContent = '●  servidor conectado';
+    els.storageNote.textContent = 'Los archivos se guardan en el servidor y están disponibles desde cualquier navegador.';
+    return true;
+  }catch(e){
+    els.serverStatus.textContent = '●  sin conexión al servidor';
+    els.storageNote.innerHTML = 'No se encontró un backend en <code>/api/media</code>.';
+    return false;
+  }
+}
 
-    const probe = document.createElement(kind==='music' ? 'audio' : 'video');
-    probe.preload = 'metadata';
-    probe.src = url;
-    probe.onloadedmetadata = () => { item.duration = probe.duration; renderGrid(); };
-  });
+async function loadLibrary(){
+  try{
+    const r = await fetch(`${API_BASE}/api/media`);
+    if(!r.ok) throw new Error();
+    items = await r.json();
+  }catch(e){
+    items = [];
+  }
   renderGrid();
 }
 
+async function uploadFiles(fileList){
+  for(const file of fileList){
+    const row = addQueueRow(file.name);
+    try{
+      await uploadOne(file, (pct) => row.setProgress(pct));
+      row.setDone();
+    }catch(err){
+      row.setError(err.message || 'fallo al subir');
+    }
+  }
+  loadLibrary();
+}
+
+function uploadOne(file, onProgress){
+  return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_BASE}/api/media/upload`);
+    xhr.upload.onprogress = (e) => {
+      if(e.lengthComputable) onProgress(Math.round((e.loaded/e.total)*100));
+    };
+    xhr.onload = () => {
+      if(xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`error ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error('error de red'));
+    xhr.send(form);
+  });
+}
+
+function addQueueRow(name){
+  const row = document.createElement('div');
+  row.className = 'qrow';
+  row.innerHTML = `
+    <div class="name">${name}</div>
+    <div class="bar"><i></i></div>
+    <div class="status">0%</div>
+  `;
+  els.queue.appendChild(row);
+  const bar = row.querySelector('i');
+  const status = row.querySelector('.status');
+  return {
+    setProgress(pct){ bar.style.width = pct + '%'; status.textContent = pct + '%'; },
+    setDone(){ row.classList.add('done'); status.textContent = 'listo'; bar.style.width='100%'; setTimeout(()=>row.remove(), 2200); },
+    setError(msg){ row.classList.add('error'); status.textContent = msg; },
+  };
+}
+
 function renderGrid(){
-  const filtered = items.filter(it => activeFilter==='all' || it.kind===activeFilter);
+  const counts = { all: items.length, movie:0, video:0, music:0 };
+  items.forEach(it => counts[classify(it.mime, it.name)]++);
+  document.getElementById('cntAll').textContent = counts.all;
+  document.getElementById('cntMovie').textContent = counts.movie;
+  document.getElementById('cntVideo').textContent = counts.video;
+  document.getElementById('cntMusic').textContent = counts.music;
+
+  const filtered = items.filter(it => activeFilter === 'all' || classify(it.mime, it.name) === activeFilter);
   els.grid.innerHTML = '';
   els.emptyMsg.hidden = filtered.length !== 0;
 
   filtered.forEach(it => {
+    const kind = classify(it.mime, it.name);
     const card = document.createElement('div');
-    card.className = `card kind-${it.kind}`;
+    card.className = `card kind-${kind}`;
     card.innerHTML = `
-      <div class="thumb">${iconFor(it.kind)}${it.duration ? `<span class="dur">${fmtDur(it.duration)}</span>` : ''}</div>
+      <div class="thumb">${iconFor(kind)}${it.duration ? `<span class="dur">${fmtDur(it.duration)}</span>` : ''}</div>
       <div class="title">${it.name}</div>
       <div class="meta">${fmtBytes(it.size)}</div>
     `;
-    card.addEventListener('click', () => openPlayer(it));
+    card.addEventListener('click', () => openPlayer(it, kind));
     els.grid.appendChild(card);
   });
 }
 
-function openPlayer(item){
+function openPlayer(item, kind){
   els.playerTitle.textContent = item.name;
-  if(item.kind === 'music'){
+  els.playerInfo.textContent = `${fmtBytes(item.size)} · subido ${item.uploadedAt ? new Date(item.uploadedAt).toLocaleDateString() : ''}`;
+  const src = `${API_BASE}/api/media/${item.id}/stream`;
+
+  if(kind === 'music'){
     els.stage.innerHTML = `
       <div class="audio-stage">
         <div class="disc"></div>
-        <audio controls autoplay src="${item.url}"></audio>
+        <audio controls autoplay src="${src}"></audio>
       </div>`;
   }else{
-    els.stage.innerHTML = `<video controls autoplay src="${item.url}"></video>`;
+    els.stage.innerHTML = `<video controls autoplay src="${src}"></video>`;
   }
   els.veil.hidden = false;
 }
-function closePlayer(){ els.veil.hidden = true; els.stage.innerHTML = ''; }
+function closePlayer(){
+  els.veil.hidden = true;
+  els.stage.innerHTML = '';
+}
 
 els.pickBtn.addEventListener('click', () => els.fileInput.click());
-els.fileInput.addEventListener('change', e => { if(e.target.files.length) addFiles(e.target.files); e.target.value=''; });
-['dragover','dragenter'].forEach(ev => els.dropzone.addEventListener(ev, e => { e.preventDefault(); els.dropzone.classList.add('drag'); }));
-['dragleave','drop'].forEach(ev => els.dropzone.addEventListener(ev, e => { e.preventDefault(); els.dropzone.classList.remove('drag'); }));
-els.dropzone.addEventListener('drop', e => { if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
-els.tabs.addEventListener('click', e => {
+els.fileInput.addEventListener('change', (e) => {
+  if(e.target.files.length) uploadFiles(e.target.files);
+  e.target.value = '';
+});
+['dragover','dragenter'].forEach(ev => els.dropzone.addEventListener(ev, (e) => {
+  e.preventDefault(); els.dropzone.classList.add('drag');
+}));
+['dragleave','drop'].forEach(ev => els.dropzone.addEventListener(ev, (e) => {
+  e.preventDefault(); els.dropzone.classList.remove('drag');
+}));
+els.dropzone.addEventListener('drop', (e) => {
+  if(e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+});
+els.railTabs.addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-filter]');
   if(!btn) return;
-  [...els.tabs.querySelectorAll('button')].forEach(b => b.classList.remove('active'));
+  [...els.railTabs.querySelectorAll('button')].forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   activeFilter = btn.dataset.filter;
   renderGrid();
 });
 els.closePlayer.addEventListener('click', closePlayer);
-els.veil.addEventListener('click', e => { if(e.target === els.veil) closePlayer(); });
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closePlayer(); });
+els.veil.addEventListener('click', (e) => { if(e.target === els.veil) closePlayer(); });
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closePlayer(); });
 
-renderGrid();
+(async function init(){
+  await checkServer();
+  await loadLibrary();
+})();
 </script>
 </body>
 </html>
