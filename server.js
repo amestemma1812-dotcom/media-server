@@ -1,54 +1,77 @@
 // server.js
 // Servidor de biblioteca multimedia: sube, lista, transmite y borra
-// videos, películas y música. Guarda los archivos en disco (./uploads)
-// y su metadata en un archivo JSON (./data/library.json).
+// videos, películas y música. Los archivos y su metadata se guardan
+// en Cloudflare R2, así que persisten aunque el servidor se reinicie.
 
 const express = require('express');
 const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
+const multerS3 = require('multer-s3');
+const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
-const DATA_DIR = path.join(__dirname, 'data');
-const DB_FILE = path.join(DATA_DIR, 'library.json');
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME;
 
-// ---------- preparar carpetas y "base de datos" ----------
-for (const dir of [UPLOAD_DIR, DATA_DIR]) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+const s3 = new S3Client({
+  region: 'auto',
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY,
+  },
+});
+
+const LIBRARY_KEY = 'library.json';
+
+function streamToString(stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on('data', (chunk) => chunks.push(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+  });
 }
-if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, '[]', 'utf-8');
 
-function readLibrary() {
+async function readLibrary() {
   try {
-    return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    const data = await s3.send(new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: LIBRARY_KEY }));
+    const body = await streamToString(data.Body);
+    return JSON.parse(body);
   } catch (e) {
     return [];
   }
 }
-function writeLibrary(items) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(items, null, 2), 'utf-8');
+
+async function writeLibrary(items) {
+  await s3.send(new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: LIBRARY_KEY,
+    Body: JSON.stringify(items, null, 2),
+    ContentType: 'application/json',
+  }));
 }
 
-// ---------- multer: dónde y cómo guardar los archivos subidos ----------
 const ALLOWED_MIME = /^(video|audio)\//;
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename: (req, file, cb) => {
-    const id = crypto.randomUUID();
-    const ext = path.extname(file.originalname);
-    file.generatedId = id; // lo recuperamos después en la ruta
-    cb(null, `${id}${ext}`);
-  },
-});
-
 const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 * 1024 }, // 5 GB por archivo, ajusta a tu gusto
+  storage: multerS3({
+    s3,
+    bucket: R2_BUCKET_NAME,
+    key: (req, file, cb) => {
+      const id = crypto.randomUUID();
+      const ext = path.extname(file.originalname);
+      file.generatedId = id;
+      cb(null, `files/${id}${ext}`);
+    },
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_MIME.test(file.mimetype)) {
       return cb(new Error('Solo se permiten archivos de video o audio'));
@@ -58,93 +81,83 @@ const upload = multer({
 });
 
 app.use(express.json());
-
-// ---------- servir el frontend (carpeta public) ----------
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---------- API ----------
-
 // Listar todo lo que hay en la biblioteca
-app.get('/api/media', (req, res) => {
-  const items = readLibrary().map(({ filename, ...publicFields }) => publicFields);
-  res.json(items);
+app.get('/api/media', async (req, res) => {
+  const items = await readLibrary();
+  res.json(items.map(({ key, ...pub }) => pub));
 });
 
 // Subir un archivo
 app.post('/api/media/upload', (req, res) => {
-  upload.single('file')(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({ error: err.message });
-    }
-    if (!req.file) {
-      return res.status(400).json({ error: 'No se recibió ningún archivo' });
-    }
+  upload.single('file')(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    if (!req.file) return res.status(400).json({ error: 'No se recibió ningún archivo' });
 
-    const id = path.parse(req.file.filename).name;
     const item = {
-      id,
+      id: req.file.generatedId,
       name: req.file.originalname,
       mime: req.file.mimetype,
       size: req.file.size,
-      filename: req.file.filename,
+      key: req.file.key,
       uploadedAt: new Date().toISOString(),
     };
 
-    const items = readLibrary();
+    const items = await readLibrary();
     items.push(item);
-    writeLibrary(items);
+    await writeLibrary(items);
 
-    const { filename, ...publicFields } = item;
-    res.status(201).json(publicFields);
+    const { key, ...pub } = item;
+    res.status(201).json(pub);
   });
 });
 
-// Transmitir un archivo (con soporte de rango para que el video/audio
-// se pueda adelantar/retroceder sin descargarlo completo primero)
-app.get('/api/media/:id/stream', (req, res) => {
-  const items = readLibrary();
+// Transmitir un archivo (con soporte de rango)
+app.get('/api/media/:id/stream', async (req, res) => {
+  const items = await readLibrary();
   const item = items.find((i) => i.id === req.params.id);
   if (!item) return res.status(404).json({ error: 'Archivo no encontrado' });
 
-  const filePath = path.join(UPLOAD_DIR, item.filename);
-  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Archivo no encontrado en disco' });
-
-  const stat = fs.statSync(filePath);
   const range = req.headers.range;
+  try {
+    const data = await s3.send(new GetObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: item.key,
+      Range: range || undefined,
+    }));
 
-  if (!range) {
-    res.writeHead(200, {
-      'Content-Length': stat.size,
-      'Content-Type': item.mime,
-    });
-    return fs.createReadStream(filePath).pipe(res);
+    if (range && data.ContentRange) {
+      res.writeHead(206, {
+        'Content-Range': data.ContentRange,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': data.ContentLength,
+        'Content-Type': item.mime,
+      });
+    } else {
+      res.writeHead(200, {
+        'Content-Length': data.ContentLength,
+        'Content-Type': item.mime,
+        'Accept-Ranges': 'bytes',
+      });
+    }
+    data.Body.pipe(res);
+  } catch (e) {
+    res.status(500).json({ error: 'Error al transmitir el archivo' });
   }
-
-  const [startStr, endStr] = range.replace(/bytes=/, '').split('-');
-  const start = parseInt(startStr, 10);
-  const end = endStr ? parseInt(endStr, 10) : stat.size - 1;
-  const chunkSize = end - start + 1;
-
-  res.writeHead(206, {
-    'Content-Range': `bytes ${start}-${end}/${stat.size}`,
-    'Accept-Ranges': 'bytes',
-    'Content-Length': chunkSize,
-    'Content-Type': item.mime,
-  });
-  fs.createReadStream(filePath, { start, end }).pipe(res);
 });
 
 // Borrar un archivo
-app.delete('/api/media/:id', (req, res) => {
-  const items = readLibrary();
+app.delete('/api/media/:id', async (req, res) => {
+  const items = await readLibrary();
   const idx = items.findIndex((i) => i.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Archivo no encontrado' });
 
   const [item] = items.splice(idx, 1);
-  const filePath = path.join(UPLOAD_DIR, item.filename);
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
-  writeLibrary(items);
+  try {
+    await s3.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: item.key }));
+  } catch (e) {}
+  await writeLibrary(items);
   res.status(204).end();
 });
 
